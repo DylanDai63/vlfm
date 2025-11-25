@@ -186,14 +186,13 @@ class BaseITMPolicy(BaseObjectNavPolicy):
             cv2.COLOR_BGR2RGB,
         )
 
-        # Add frontier-annotated RGB frame visualization
-        if self._compute_frontiers and len(frontiers) > 0:
-            rgb, depth, tf_camera_to_episodic, min_depth, max_depth, fx, fy = \
+        # Draw frontiers onto the annotated RGB frame
+        if self._compute_frontiers and len(frontiers) > 0 and "annotated_rgb" in policy_info:
+            rgb_base = policy_info["annotated_rgb"].copy()
+            _, depth, tf_camera_to_episodic, min_depth, max_depth, fx, fy = \
                 self._observations_cache["object_map_rgbd"][0]
 
-            # Create annotated RGB with frontiers projected onto camera frame
-            rgb_with_frontiers = rgb.copy()
-            height, width = rgb.shape[:2]
+            height, width = rgb_base.shape[:2]
 
             # Project frontiers to image coordinates
             pixel_coords, valid_mask = project_map_points_to_image(
@@ -231,13 +230,13 @@ class BaseITMPolicy(BaseObjectNavPolicy):
                     color = colors[idx % len(colors)]
 
                 # Draw circle at frontier location
-                cv2.circle(rgb_with_frontiers, (u, v), 10, color, 2)
-                cv2.circle(rgb_with_frontiers, (u, v), 3, color, -1)
+                cv2.circle(rgb_base, (u, v), 10, color, 2)
+                cv2.circle(rgb_base, (u, v), 3, color, -1)
 
                 # Draw label
                 label = f"F{idx}"
                 cv2.putText(
-                    rgb_with_frontiers,
+                    rgb_base,
                     label,
                     (u + 15, v - 10),
                     cv2.FONT_HERSHEY_SIMPLEX,
@@ -248,7 +247,7 @@ class BaseITMPolicy(BaseObjectNavPolicy):
 
                 # Draw direction arrow from center
                 cv2.arrowedLine(
-                    rgb_with_frontiers,
+                    rgb_base,
                     (center_x, center_y),
                     (u, v),
                     color,
@@ -259,7 +258,7 @@ class BaseITMPolicy(BaseObjectNavPolicy):
             # Add info text
             info_text = f"Frontiers: {len(visible_indices)}/{len(frontiers)} visible"
             cv2.putText(
-                rgb_with_frontiers,
+                rgb_base,
                 info_text,
                 (10, 30),
                 cv2.FONT_HERSHEY_SIMPLEX,
@@ -268,7 +267,7 @@ class BaseITMPolicy(BaseObjectNavPolicy):
                 2,
             )
             cv2.putText(
-                rgb_with_frontiers,
+                rgb_base,
                 info_text,
                 (10, 30),
                 cv2.FONT_HERSHEY_SIMPLEX,
@@ -277,7 +276,8 @@ class BaseITMPolicy(BaseObjectNavPolicy):
                 1,
             )
 
-            policy_info["rgb_with_frontiers"] = rgb_with_frontiers
+            # Replace annotated_rgb with frontier-annotated version
+            policy_info["annotated_rgb"] = rgb_base
 
         return policy_info
 
