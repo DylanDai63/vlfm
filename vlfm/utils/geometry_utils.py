@@ -269,3 +269,79 @@ def pt_from_rho_theta(rho: float, theta: float) -> np.ndarray:
     y = rho * math.sin(theta)
 
     return np.array([x, y])
+
+
+def project_map_points_to_image(
+    map_points_xy: np.ndarray,
+    tf_camera_to_episodic: np.ndarray,
+    fx: float,
+    fy: float,
+    image_width: int,
+    image_height: int,
+    point_height: float = 0.0,
+) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    Projects 2D map points (from top-down map) back to image pixel coordinates.
+    This allows you to see which direction in the camera view corresponds to each
+    frontier or map point.
+
+    Args:
+        map_points_xy: Array of shape (N, 2) with (x, y) coordinates in episodic frame
+        tf_camera_to_episodic: 4x4 transformation matrix from camera to episodic frame
+        fx: Camera focal length in x direction (pixels)
+        fy: Camera focal length in y direction (pixels)
+        image_width: Width of the image in pixels
+        image_height: Height of the image in pixels
+        point_height: Z-coordinate (height) to assign to the map points in meters.
+            Typically set to camera height or 0.0 for ground level.
+
+    Returns:
+        pixel_coords: Array of shape (N, 2) with (u, v) pixel coordinates
+        valid_mask: Boolean array of shape (N,) indicating which points are:
+            - In front of the camera (positive depth)
+            - Within image bounds
+
+    Example:
+        >>> frontiers_xy = obstacle_map.frontiers  # (N, 2) array
+        >>> pixel_coords, valid = project_map_points_to_image(
+        ...     frontiers_xy, tf_camera_to_episodic, fx, fy, 640, 480
+        ... )
+        >>> visible_frontiers = pixel_coords[valid]
+        >>> # Draw circles on RGB image at visible_frontiers positions
+    """
+    if len(map_points_xy) == 0:
+        return np.array([]).reshape(0, 2), np.array([], dtype=bool)
+
+    # Add z-coordinate to make 3D points in episodic frame
+    N = map_points_xy.shape[0]
+    map_points_3d = np.hstack([map_points_xy, np.ones((N, 1)) * point_height])
+
+    # Transform from episodic frame to camera frame
+    # We need the inverse transformation
+    tf_episodic_to_camera = np.linalg.inv(tf_camera_to_episodic)
+    points_camera_frame = transform_points(tf_episodic_to_camera, map_points_3d)
+
+    # Extract x, y, z in camera frame
+    # Camera frame convention (from get_point_cloud): z forward, -x right, -y down
+    z = points_camera_frame[:, 0]  # depth (forward)
+    x = -points_camera_frame[:, 1]  # horizontal (right is positive)
+    y = -points_camera_frame[:, 2]  # vertical (down is positive)
+
+    # Check if points are in front of the camera
+    valid_depth = z > 0
+
+    # Project to image plane using pinhole camera model
+    # Avoid division by zero
+    z_safe = np.where(z > 0, z, 1.0)
+    u = (x / z_safe) * fx + image_width / 2
+    v = (y / z_safe) * fy + image_height / 2
+
+    # Check if points are within image bounds
+    valid_u = (u >= 0) & (u < image_width)
+    valid_v = (v >= 0) & (v < image_height)
+
+    valid_mask = valid_depth & valid_u & valid_v
+
+    pixel_coords = np.stack([u, v], axis=1)
+
+    return pixel_coords, valid_mask
