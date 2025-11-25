@@ -207,7 +207,6 @@ class BaseITMPolicy(BaseObjectNavPolicy):
 
             # Draw visible frontiers
             visible_indices = np.where(valid_mask)[0]
-            center_x, center_y = width // 2, height // 2
 
             # Define colors for frontiers
             colors = [
@@ -219,7 +218,10 @@ class BaseITMPolicy(BaseObjectNavPolicy):
                 (0, 255, 255),  # Yellow
             ]
 
-            for idx in visible_indices:
+            # Letter labels A, B, C, D, etc.
+            letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+            for i, idx in enumerate(visible_indices):
                 u, v = int(pixel_coords[idx, 0]), int(pixel_coords[idx, 1])
 
                 # Choose color
@@ -230,29 +232,25 @@ class BaseITMPolicy(BaseObjectNavPolicy):
                     color = colors[idx % len(colors)]
 
                 # Draw circle at frontier location
-                cv2.circle(rgb_base, (u, v), 10, color, 2)
-                cv2.circle(rgb_base, (u, v), 3, color, -1)
+                cv2.circle(rgb_base, (u, v), 20, color, 3)
 
-                # Draw label
-                label = f"F{idx}"
+                # Draw letter label (A, B, C, D, ...)
+                label = letters[i] if i < len(letters) else f"{i}"
+                # Get text size to center it
+                (text_width, text_height), _ = cv2.getTextSize(
+                    label, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2
+                )
+                # Draw text centered in circle
+                text_x = u - text_width // 2
+                text_y = v + text_height // 2
                 cv2.putText(
                     rgb_base,
                     label,
-                    (u + 15, v - 10),
+                    (text_x, text_y),
                     cv2.FONT_HERSHEY_SIMPLEX,
-                    0.6,
+                    0.8,
                     color,
                     2,
-                )
-
-                # Draw direction arrow from center
-                cv2.arrowedLine(
-                    rgb_base,
-                    (center_x, center_y),
-                    (u, v),
-                    color,
-                    2,
-                    tipLength=0.2,
                 )
 
             # Add info text
