@@ -11,7 +11,7 @@ from vlfm.mapping.frontier_map import FrontierMap
 from vlfm.mapping.value_map import ValueMap
 from vlfm.policy.base_objectnav_policy import BaseObjectNavPolicy
 from vlfm.policy.utils.acyclic_enforcer import AcyclicEnforcer
-from vlfm.utils.geometry_utils import closest_point_within_threshold
+from vlfm.utils.geometry_utils import closest_point_within_threshold, project_map_points_to_image
 from vlfm.vlm.blip2itm import BLIP2ITMClient
 from vlfm.vlm.detections import ObjectDetections
 
@@ -185,6 +185,99 @@ class BaseITMPolicy(BaseObjectNavPolicy):
             self._value_map.visualize(markers, reduce_fn=self._vis_reduce_fn),
             cv2.COLOR_BGR2RGB,
         )
+
+        # Add frontier-annotated RGB frame visualization
+        if self._compute_frontiers and len(frontiers) > 0:
+            rgb, depth, tf_camera_to_episodic, min_depth, max_depth, fx, fy = \
+                self._observations_cache["object_map_rgbd"][0]
+
+            # Create annotated RGB with frontiers projected onto camera frame
+            rgb_with_frontiers = rgb.copy()
+            height, width = rgb.shape[:2]
+
+            # Project frontiers to image coordinates
+            pixel_coords, valid_mask = project_map_points_to_image(
+                map_points_xy=frontiers,
+                tf_camera_to_episodic=tf_camera_to_episodic,
+                fx=fx,
+                fy=fy,
+                image_width=width,
+                image_height=height,
+                point_height=1.5,  # Camera height
+            )
+
+            # Draw visible frontiers
+            visible_indices = np.where(valid_mask)[0]
+            center_x, center_y = width // 2, height // 2
+
+            # Define colors for frontiers
+            colors = [
+                (255, 0, 0),    # Blue
+                (0, 255, 0),    # Green
+                (0, 0, 255),    # Red
+                (255, 255, 0),  # Cyan
+                (255, 0, 255),  # Magenta
+                (0, 255, 255),  # Yellow
+            ]
+
+            for idx in visible_indices:
+                u, v = int(pixel_coords[idx, 0]), int(pixel_coords[idx, 1])
+
+                # Choose color
+                is_selected = np.array_equal(frontiers[idx], self._last_frontier)
+                if is_selected:
+                    color = (0, 255, 255)  # Yellow for selected frontier
+                else:
+                    color = colors[idx % len(colors)]
+
+                # Draw circle at frontier location
+                cv2.circle(rgb_with_frontiers, (u, v), 10, color, 2)
+                cv2.circle(rgb_with_frontiers, (u, v), 3, color, -1)
+
+                # Draw label
+                label = f"F{idx}"
+                cv2.putText(
+                    rgb_with_frontiers,
+                    label,
+                    (u + 15, v - 10),
+                    cv2.FONT_HERSHEY_SIMPLEX,
+                    0.6,
+                    color,
+                    2,
+                )
+
+                # Draw direction arrow from center
+                cv2.arrowedLine(
+                    rgb_with_frontiers,
+                    (center_x, center_y),
+                    (u, v),
+                    color,
+                    2,
+                    tipLength=0.2,
+                )
+
+            # Add info text
+            info_text = f"Frontiers: {len(visible_indices)}/{len(frontiers)} visible"
+            cv2.putText(
+                rgb_with_frontiers,
+                info_text,
+                (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (255, 255, 255),
+                2,
+            )
+            cv2.putText(
+                rgb_with_frontiers,
+                info_text,
+                (10, 30),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.7,
+                (0, 255, 0),
+                1,
+            )
+
+            policy_info["rgb_with_frontiers"] = rgb_with_frontiers
 
         return policy_info
 
