@@ -18,7 +18,8 @@ dependencies = [
     "torchvision == 0.13.1",
     "numpy == 1.26.4",
     "flask >= 2.3.2",
-    "seaborn >= 0.12.2",  # required by yolov7
+    "seaborn >= 0.12.2",  # required by visualization
+    "ultralytics == 8.0.196",  # YOLO11 support
     "open3d >= 0.17.0",
     "transformers == 4.26.0",  # higher versions than 4.26.0 "break" BLIP-2 in LAVIS
     "timm == 0.4.12",
