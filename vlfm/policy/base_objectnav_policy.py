@@ -19,7 +19,7 @@ from vlfm.vlm.blip2 import BLIP2Client
 from vlfm.vlm.coco_classes import COCO_CLASSES
 from vlfm.vlm.grounding_dino import GroundingDINOClient, ObjectDetections
 from vlfm.vlm.sam import MobileSAMClient
-from vlfm.vlm.yolov11 import YOLO11Client
+from vlfm.vlm.yolov9 import YOLOv9Client
 
 try:
     from habitat_baselines.common.tensor_dict import TensorDict
@@ -62,7 +62,7 @@ class BaseObjectNavPolicy(BasePolicy):
     ) -> None:
         super().__init__()
         self._object_detector = GroundingDINOClient(port=int(os.environ.get("GROUNDING_DINO_PORT", "12181")))
-        self._coco_object_detector = YOLO11Client(port=int(os.environ.get("YOLOV7_PORT", "12184")))
+        self._coco_object_detector = YOLOv9Client(port=int(os.environ.get("YOLOV7_PORT", "12184")))
         self._mobile_sam = MobileSAMClient(port=int(os.environ.get("SAM_PORT", "12183")))
         self._use_vqa = use_vqa
         if use_vqa:
