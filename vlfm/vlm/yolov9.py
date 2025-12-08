@@ -75,6 +75,10 @@ class YOLOv9:
         with torch.inference_mode():
             pred = self.model(img, augment=False, visualize=False)
 
+        # Handle model output - may be list or tuple
+        if isinstance(pred, (list, tuple)):
+            pred = pred[0]  # Get first element (predictions)
+
         # Apply NMS
         pred = non_max_suppression(
             pred,
