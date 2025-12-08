@@ -37,7 +37,8 @@ class ValueMap(BaseMap):
     _confidence_masks: Dict[Tuple[float, float], np.ndarray] = {}
     _camera_positions: List[np.ndarray] = []
     _last_camera_yaw: float = 0.0
-    _min_confidence: float = 0.25
+    _min_confidence: float = 0.0
+    # _min_confidence: float = 0.25
     _decision_threshold: float = 0.35
     _map: np.ndarray
 

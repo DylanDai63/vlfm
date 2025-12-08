@@ -94,6 +94,7 @@ class ObstacleMap(BaseMap):
             point_cloud_camera_frame = get_point_cloud(scaled_depth, mask, fx, fy)
             point_cloud_episodic_frame = transform_points(tf_camera_to_episodic, point_cloud_camera_frame)
             obstacle_cloud = filter_points_by_height(point_cloud_episodic_frame, self._min_height, self._max_height)
+            print(self._min_height, self._max_height)
 
             # Populate topdown map with obstacle locations
             xy_points = obstacle_cloud[:, :2]

@@ -186,3 +186,5 @@ habitat-lab/
 GroundingDINO/
 __pycache__/
 *.pyc
+data/
+yolov7/
