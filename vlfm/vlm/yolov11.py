@@ -17,8 +17,8 @@ except Exception:
 
 
 class YOLO11:
-    def __init__(self, weights: str = "data/yolo11m.pt", conf_threshold: float = 0.25):
-        """Loads the YOLO11 model."""
+    def __init__(self, weights: str = "data/yolov8m.pt", conf_threshold: float = 0.25):
+        """Loads the YOLOv8 model (YOLO11 requires PyTorch 2.0+, using v8 for compatibility)."""
         self.model = YOLO(weights)
         self.conf_threshold = conf_threshold
 
@@ -95,10 +95,10 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--port", type=int, default=12184)
-    parser.add_argument("--weights", type=str, default="data/yolo11m.pt")
+    parser.add_argument("--weights", type=str, default="data/yolov8m.pt")
     args = parser.parse_args()
 
-    print("Loading YOLO11 model...")
+    print("Loading YOLOv8 model (using for YOLO11 compatibility)...")
 
     class YOLO11Server(ServerMixin, YOLO11):
         def process_payload(self, payload: dict) -> dict:
