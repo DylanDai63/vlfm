@@ -29,7 +29,8 @@ class MobileSAM:
         device: Optional[Any] = None,
     ) -> None:
         if device is None:
-            device = torch.device("cuda") if torch.cuda.is_available() else "cpu"
+            # Force CPU mode for unsupported GPUs (e.g., RTX 50 series / sm_120)
+            device = torch.device("cpu")
         self.device = device
 
         mobile_sam = sam_model_registry[model_type](checkpoint=sam_checkpoint)
