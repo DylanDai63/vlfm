@@ -56,7 +56,7 @@ class BaseObjectNavPolicy(BasePolicy):
         vqa_prompt: str = "Is this ",
         coco_threshold: float = 0.8,
         non_coco_threshold: float = 0.4,
-        use_sam: bool = True,
+        use_sam: bool = False,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -402,7 +402,7 @@ class VLFMConfig:
     coco_threshold: float = 0.8
     non_coco_threshold: float = 0.4
     agent_radius: float = 0.18
-    use_sam: bool = True  # Set to False to skip SAM and use bbox masks instead
+    use_sam: bool = False  # Set to True to use SAM for precise segmentation
 
     @classmethod  # type: ignore
     @property
