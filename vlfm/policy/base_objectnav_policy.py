@@ -327,7 +327,8 @@ class BaseObjectNavPolicy(BasePolicy):
             else:
                 # Create a simple bbox mask as fallback when SAM is disabled
                 object_mask = np.zeros((height, width), dtype=np.uint8)
-                x1, y1, x2, y2 = bbox_denorm.astype(int)
+                bbox_list = bbox_denorm.tolist() if hasattr(bbox_denorm, 'tolist') else list(bbox_denorm)
+                x1, y1, x2, y2 = [int(v) for v in bbox_list]
                 x1, y1 = max(0, x1), max(0, y1)
                 x2, y2 = min(width, x2), min(height, y2)
                 object_mask[y1:y2, x1:x2] = 1
