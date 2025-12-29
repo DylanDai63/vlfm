@@ -18,7 +18,6 @@ from vlfm.utils.geometry_utils import get_fov, rho_theta
 from vlfm.vlm.blip2 import BLIP2Client
 from vlfm.vlm.coco_classes import COCO_CLASSES
 from vlfm.vlm.grounding_dino import GroundingDINOClient, ObjectDetections
-from vlfm.vlm.sam import MobileSAMClient
 from vlfm.vlm.yolov7 import YOLOv7Client
 
 try:
@@ -57,13 +56,17 @@ class BaseObjectNavPolicy(BasePolicy):
         vqa_prompt: str = "Is this ",
         coco_threshold: float = 0.8,
         non_coco_threshold: float = 0.4,
+        use_sam: bool = True,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         super().__init__()
         self._object_detector = GroundingDINOClient(port=int(os.environ.get("GROUNDING_DINO_PORT", "12181")))
         self._coco_object_detector = YOLOv7Client(port=int(os.environ.get("YOLOV7_PORT", "12184")))
-        self._mobile_sam = MobileSAMClient(port=int(os.environ.get("SAM_PORT", "12183")))
+        self._use_sam = use_sam
+        if use_sam:
+            from vlfm.vlm.sam import MobileSAMClient
+            self._mobile_sam = MobileSAMClient(port=int(os.environ.get("SAM_PORT", "12183")))
         self._use_vqa = use_vqa
         if use_vqa:
             self._vqa = BLIP2Client(port=int(os.environ.get("BLIP2_PORT", "12185")))
@@ -318,7 +321,16 @@ class BaseObjectNavPolicy(BasePolicy):
             self._observations_cache["object_map_rgbd"][0] = tuple(obs)
         for idx in range(len(detections.logits)):
             bbox_denorm = detections.boxes[idx] * np.array([width, height, width, height])
-            object_mask = self._mobile_sam.segment_bbox(rgb, bbox_denorm.tolist())
+
+            if self._use_sam:
+                object_mask = self._mobile_sam.segment_bbox(rgb, bbox_denorm.tolist())
+            else:
+                # Create a simple bbox mask as fallback when SAM is disabled
+                object_mask = np.zeros((height, width), dtype=np.uint8)
+                x1, y1, x2, y2 = bbox_denorm.astype(int)
+                x1, y1 = max(0, x1), max(0, y1)
+                x2, y2 = min(width, x2), min(height, y2)
+                object_mask[y1:y2, x1:x2] = 1
 
             # If we are using vqa, then use the BLIP2 model to visually confirm whether
             # the contours are actually correct.
@@ -390,6 +402,7 @@ class VLFMConfig:
     coco_threshold: float = 0.8
     non_coco_threshold: float = 0.4
     agent_radius: float = 0.18
+    use_sam: bool = True  # Set to False to skip SAM and use bbox masks instead
 
     @classmethod  # type: ignore
     @property
