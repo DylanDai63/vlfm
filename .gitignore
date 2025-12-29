@@ -186,3 +186,12 @@ habitat-lab/
 GroundingDINO/
 __pycache__/
 *.pyc
+
+# YOLOv7 external repository (cloned separately per README)
+yolov7/
+
+# Model weights (downloaded separately per README)
+data/*.pt
+data/*.pth
+!data/pointnav_weights.pth
+!data/spot_pointnav_weights.pth
