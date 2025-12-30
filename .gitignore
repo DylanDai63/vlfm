@@ -195,3 +195,4 @@ data/*.pt
 data/*.pth
 !data/pointnav_weights.pth
 !data/spot_pointnav_weights.pth
+traced_model.pt
