@@ -199,6 +199,13 @@ class BaseObjectNavPolicy(BasePolicy):
         if not self._visualize:
             return policy_info
 
+        # Save original RGB frame before any annotation
+        original_rgb = self._observations_cache["object_map_rgbd"][0][0]
+        test_image_dir = "test_image"
+        os.makedirs(test_image_dir, exist_ok=True)
+        save_path = os.path.join(test_image_dir, f"frame_{self._num_steps:06d}.png")
+        cv2.imwrite(save_path, cv2.cvtColor(original_rgb, cv2.COLOR_RGB2BGR))
+
         annotated_depth = self._observations_cache["object_map_rgbd"][0][1] * 255
         annotated_depth = cv2.cvtColor(annotated_depth.astype(np.uint8), cv2.COLOR_GRAY2RGB)
         if self._object_masks.sum() > 0:
