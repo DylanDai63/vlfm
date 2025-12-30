@@ -199,3 +199,5 @@ traced_model.pt
 data/
 outputs/
 yolov9/
+tb/
+test_videos/
